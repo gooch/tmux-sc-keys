@@ -1,0 +1,77 @@
+#!/bin/bash
+
+
+tmux_get_window(){
+  tmux display -p '#{window_index}'
+}
+
+tmux_switch_camera(){
+  index="$1"
+
+  camera=$(tmux_get_camera "$index")
+  if [ -z "$camera" ]; then
+    tmux display "Camera $index is not set"
+  else
+    tmux switch-client -t 0:"$camera" || tmux_remove_old_camera "$index"
+  fi
+}
+
+tmux_remove_old_camera(){
+  index="$1"
+  tmux display "Window $index is gone"
+  file=$(tmux_camera_store_path "$index")
+  rm "$file"
+}
+
+tmux_camera_store_path(){
+  index="$1"
+
+  echo "${HOME}/.config/tmux/CAMERA_${index}"
+}
+
+tmux_get_camera(){
+  index=$1
+  path=$(tmux_camera_store_path "$index")
+  if [ -e "$path" ]; then
+    cat "$path"
+  fi
+}
+
+
+tmux_set_camera(){
+  index=$1
+
+  case $index in
+
+  1)
+    tmux display "Main camera set"
+  ;;
+
+  2) tmux display "Expansion camera set"
+    ;;
+
+  3)
+    tmux display "Third camera set"
+    ;;
+
+  *)
+    tmux display "${index} camera set"
+    ;;
+  esac
+
+  path=$(tmux_camera_store_path "$index")
+  tmux_get_window > "$path"
+}
+
+case "$1" in
+  "set")
+    tmux_set_camera "$2"
+    ;;
+  "switch")
+    tmux_switch_camera "$2"
+    ;;
+  *)
+    echo "$0 CMD INDEX"
+    echo "   set    record current window index and assign it to camera INDEX"
+    echo "   switch switch to the window recorded at INDEX"
+esac
